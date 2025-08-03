@@ -1,7 +1,11 @@
 
 import { type ZipCodeLookupInput, type ZipCodeLookupResponse } from '../schema';
 
-// Mock ZIP code database - in production this would be a real database or API
+// MOCK IMPLEMENTATION: This is a limited ZIP code database for development/testing
+// In a production environment, this should be replaced with:
+// - A comprehensive ZIP code database (e.g., USPS database)
+// - A third-party geocoding API (Google Maps, MapBox, etc.)
+// - A dedicated ZIP code lookup service
 const ZIP_CODE_DATABASE: Record<string, Omit<ZipCodeLookupResponse, 'zip_code'>> = {
   '10001': {
     city: 'New York',
@@ -32,6 +36,12 @@ const ZIP_CODE_DATABASE: Record<string, Omit<ZipCodeLookupResponse, 'zip_code'>>
     state: 'TX',
     latitude: 30.2711,
     longitude: -97.7436
+  },
+  '80016': {
+    city: 'Aurora',
+    state: 'CO',
+    latitude: 39.6738,
+    longitude: -104.8315
   }
 };
 
@@ -44,7 +54,9 @@ export async function lookupZipCode(input: ZipCodeLookupInput): Promise<ZipCodeL
     const locationData = ZIP_CODE_DATABASE[baseZipCode];
     
     if (!locationData) {
-      throw new Error(`ZIP code ${input.zip_code} not found`);
+      // In production, this would query a real database or API
+      // For now, provide a more informative error message
+      throw new Error(`ZIP code ${input.zip_code} not found in mock database. This is a limited implementation - in production, this would support all US ZIP codes via a comprehensive database or geocoding API.`);
     }
 
     return {
