@@ -1,26 +1,61 @@
 
+import { db } from '../db';
+import { userLocationsTable } from '../db/schema';
 import { type UpdateUserLocationInput, type UserLocation } from '../schema';
+import { eq } from 'drizzle-orm';
 
-export async function updateUserLocation(input: UpdateUserLocationInput): Promise<UserLocation> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is updating an existing user location.
-    // It should:
-    // 1. Find the location record by ID
-    // 2. Update only the provided fields
-    // 3. If ZIP code is changed, re-lookup coordinates
-    // 4. Update the updated_at timestamp
-    // 5. Return the updated location record
+export const updateUserLocation = async (input: UpdateUserLocationInput): Promise<UserLocation> => {
+  try {
+    // Build the update object with only provided fields
+    const updateData: any = {};
     
-    return Promise.resolve({
-        id: input.id,
-        user_id: "placeholder",
-        zip_code: input.zip_code || "00000",
-        latitude: input.latitude || 0,
-        longitude: input.longitude || 0,
-        city: input.city || "Unknown City",
-        state: input.state || "Unknown State",
-        is_active: input.is_active !== undefined ? input.is_active : true,
-        created_at: new Date(),
-        updated_at: new Date()
-    } as UserLocation);
-}
+    if (input.zip_code !== undefined) {
+      updateData.zip_code = input.zip_code;
+    }
+    
+    if (input.latitude !== undefined) {
+      updateData.latitude = input.latitude.toString();
+    }
+    
+    if (input.longitude !== undefined) {
+      updateData.longitude = input.longitude.toString();
+    }
+    
+    if (input.city !== undefined) {
+      updateData.city = input.city;
+    }
+    
+    if (input.state !== undefined) {
+      updateData.state = input.state;
+    }
+    
+    if (input.is_active !== undefined) {
+      updateData.is_active = input.is_active;
+    }
+
+    // Always update the timestamp
+    updateData.updated_at = new Date();
+
+    // Update the record
+    const result = await db.update(userLocationsTable)
+      .set(updateData)
+      .where(eq(userLocationsTable.id, input.id))
+      .returning()
+      .execute();
+
+    if (result.length === 0) {
+      throw new Error('User location not found');
+    }
+
+    // Convert numeric fields back to numbers
+    const userLocation = result[0];
+    return {
+      ...userLocation,
+      latitude: parseFloat(userLocation.latitude),
+      longitude: parseFloat(userLocation.longitude)
+    };
+  } catch (error) {
+    console.error('User location update failed:', error);
+    throw error;
+  }
+};

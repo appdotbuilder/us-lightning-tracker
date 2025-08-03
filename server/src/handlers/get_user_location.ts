@@ -1,13 +1,35 @@
 
+import { db } from '../db';
+import { userLocationsTable } from '../db/schema';
 import { type GetUserLocationInput, type UserLocation } from '../schema';
+import { eq, and } from 'drizzle-orm';
 
 export async function getUserLocation(input: GetUserLocationInput): Promise<UserLocation | null> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is retrieving the active location for a specific user.
-    // It should:
-    // 1. Query the database for the user's active location (is_active = true)
-    // 2. Return the location record if found, null if not found
-    // 3. Handle cases where user has multiple locations (should only return the active one)
-    
-    return Promise.resolve(null);
+  try {
+    // Query for the user's active location
+    const results = await db.select()
+      .from(userLocationsTable)
+      .where(
+        and(
+          eq(userLocationsTable.user_id, input.user_id),
+          eq(userLocationsTable.is_active, true)
+        )
+      )
+      .execute();
+
+    if (results.length === 0) {
+      return null;
+    }
+
+    // Convert numeric fields back to numbers
+    const location = results[0];
+    return {
+      ...location,
+      latitude: parseFloat(location.latitude),
+      longitude: parseFloat(location.longitude)
+    };
+  } catch (error) {
+    console.error('Get user location failed:', error);
+    throw error;
+  }
 }

@@ -1,15 +1,31 @@
 
+import { db } from '../db';
+import { notificationsTable, lightningStrikesTable } from '../db/schema';
 import { type GetUserLocationInput, type Notification } from '../schema';
+import { eq, desc } from 'drizzle-orm';
 
 export async function getUserNotifications(input: GetUserLocationInput): Promise<Notification[]> {
-    // This is a placeholder declaration! Real code should be implemented here.
-    // The goal of this handler is retrieving all notifications for a specific user.
-    // It should:
-    // 1. Query notifications for the specified user_id
-    // 2. Include related lightning strike data
-    // 3. Order by creation time (most recent first)
-    // 4. Optionally support pagination for large result sets
-    // 5. Return notifications with complete strike information
-    
-    return Promise.resolve([]);
+  try {
+    // Query notifications with joined lightning strike data
+    const results = await db.select()
+      .from(notificationsTable)
+      .innerJoin(lightningStrikesTable, eq(notificationsTable.lightning_strike_id, lightningStrikesTable.id))
+      .where(eq(notificationsTable.user_id, input.user_id))
+      .orderBy(desc(notificationsTable.created_at))
+      .execute();
+
+    // Transform joined results back to notification format with proper numeric conversions
+    return results.map(result => ({
+      id: result.notifications.id,
+      user_id: result.notifications.user_id,
+      lightning_strike_id: result.notifications.lightning_strike_id,
+      distance_miles: parseFloat(result.notifications.distance_miles),
+      email_sent: result.notifications.email_sent,
+      email_sent_at: result.notifications.email_sent_at,
+      created_at: result.notifications.created_at
+    }));
+  } catch (error) {
+    console.error('Get user notifications failed:', error);
+    throw error;
+  }
 }
